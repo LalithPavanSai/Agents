@@ -1,0 +1,186 @@
+version: 2
+
+models:
+  - name: stg_production__product
+    description: Staged Product source data — typed, hashed, and SCD2-ready. Maps to DimProduct in DW.
+    columns:
+      - name: product_hk
+        description: Hash key derived from product_number (natural business key).
+        data_tests:
+          - not_null
+          - unique
+      - name: product_hashdiff
+        data_tests:
+          - not_null
+      - name: product_id
+        data_tests:
+          - not_null
+          - unique
+      - name: product_number
+        data_tests:
+          - not_null
+          - unique
+      - name: product_name
+        data_tests:
+          - not_null
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null
+
+  - name: stg_production__product_category
+    description: Staged ProductCategory lookup data — typed, hashed, and SCD2-ready.
+    columns:
+      - name: product_category_hk
+        description: Hash key derived from product_category_id.
+        data_tests:
+          - not_null
+          - unique
+      - name: product_category_hashdiff
+        data_tests:
+          - not_null
+      - name: product_category_id
+        data_tests:
+          - not_null
+          - unique
+      - name: category_name
+        data_tests:
+          - not_null
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null
+
+  - name: stg_production__product_subcategory
+    description: Staged ProductSubcategory lookup data — typed, hashed, and SCD2-ready.
+    columns:
+      - name: product_subcategory_hk
+        description: Hash key derived from product_subcategory_id.
+        data_tests:
+          - not_null
+          - unique
+      - name: product_subcategory_hashdiff
+        data_tests:
+          - not_null
+      - name: product_subcategory_id
+        data_tests:
+          - not_null
+          - unique
+      - name: product_category_id
+        data_tests:
+          - not_null
+      - name: subcategory_name
+        data_tests:
+          - not_null
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null
+
+  - name: stg_production__product_model
+    description: Staged ProductModel data — typed, hashed, and SCD2-ready.
+    columns:
+      - name: product_model_hk
+        description: Hash key derived from product_model_id.
+        data_tests:
+          - not_null
+          - unique
+      - name: product_model_hashdiff
+        data_tests:
+          - not_null
+      - name: product_model_id
+        data_tests:
+          - not_null
+          - unique
+      - name: model_name
+        data_tests:
+          - not_null
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null
+
+  - name: stg_production__product_cost_history
+    description: >
+      Staged ProductCostHistory data — typed, hashed, and SCD2-ready.
+      Natural key is (product_id, start_date). Used to derive ProductStandardCost
+      and TotalProductCost in FactInternetSales.
+    columns:
+      - name: product_cost_history_hk
+        description: Hash key derived from composite key (product_id, start_date).
+        data_tests:
+          - not_null
+          - unique
+      - name: product_cost_history_hashdiff
+        data_tests:
+          - not_null
+      - name: product_id
+        data_tests:
+          - not_null
+      - name: start_date
+        data_tests:
+          - not_null
+      - name: standard_cost
+        data_tests:
+          - not_null
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null
+
+  - name: stg_production__product_list_price_history
+    description: >
+      Staged ProductListPriceHistory data — typed, hashed, and SCD2-ready.
+      Natural key is (product_id, start_date).
+    columns:
+      - name: product_list_price_history_hk
+        description: Hash key derived from composite key (product_id, start_date).
+        data_tests:
+          - not_null
+          - unique
+      - name: product_list_price_history_hashdiff
+        data_tests:
+          - not_null
+      - name: product_id
+        data_tests:
+          - not_null
+      - name: start_date
+        data_tests:
+          - not_null
+      - name: list_price
+        data_tests:
+          - not_null
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null

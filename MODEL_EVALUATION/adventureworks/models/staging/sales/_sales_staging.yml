@@ -1,0 +1,278 @@
+version: 2
+
+models:
+  - name: stg_sales__sales_order_detail
+    description: >
+      Staged SalesOrderDetail source data — typed, hashed, and prepared for downstream
+      Internet Sales facts. Includes SCD Type 2 metadata columns for change tracking.
+    columns:
+      - name: sales_order_detail_hk
+        description: Hash key derived from the composite business key (sales_order_id, sales_order_detail_id).
+        data_tests:
+          - not_null
+          - unique
+      - name: sales_order_detail_hashdiff
+        description: Hashdiff across all SalesOrderDetail business columns for row change detection.
+        data_tests:
+          - not_null
+      - name: sales_order_id
+        description: Foreign key to SalesOrderHeader.
+        data_tests:
+          - not_null
+      - name: sales_order_detail_id
+        description: Surrogate line identifier within a sales order. Maps to SalesOrderLineNumber in FactInternetSales.
+        data_tests:
+          - not_null
+          - unique
+      - name: product_id
+        description: Foreign key to Product (maps to DimProduct.ProductKey in DW).
+        data_tests:
+          - not_null
+      - name: special_offer_id
+        description: Foreign key to SpecialOffer (maps to DimPromotion.PromotionKey in DW).
+        data_tests:
+          - not_null
+      - name: order_qty
+        data_tests:
+          - not_null
+      - name: unit_price
+        data_tests:
+          - not_null
+      - name: line_total
+        data_tests:
+          - not_null
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null
+
+  - name: stg_sales__sales_order_header
+    description: >
+      Staged SalesOrderHeader source data — typed, hashed, and prepared for downstream
+      Internet Sales facts. Includes date surrogate keys and SCD Type 2 metadata columns.
+    columns:
+      - name: sales_order_hk
+        description: Hash key generated from the natural business key (sales_order_number).
+        data_tests:
+          - not_null
+          - unique
+      - name: sales_order_header_hashdiff
+        description: Hashdiff across all SalesOrderHeader business columns for row change detection.
+        data_tests:
+          - not_null
+      - name: sales_order_id
+        data_tests:
+          - not_null
+          - unique
+      - name: sales_order_number
+        data_tests:
+          - not_null
+          - unique
+      - name: customer_id
+        data_tests:
+          - not_null
+      - name: order_date_key
+        data_tests:
+          - not_null
+      - name: due_date_key
+        data_tests:
+          - not_null
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null
+
+  - name: stg_sales__customer
+    description: Staged Customer source data — typed, hashed, and SCD2-ready.
+    columns:
+      - name: customer_hk
+        description: Hash key derived from customer_id.
+        data_tests:
+          - not_null
+          - unique
+      - name: customer_hashdiff
+        data_tests:
+          - not_null
+      - name: customer_id
+        data_tests:
+          - not_null
+          - unique
+      - name: account_number
+        data_tests:
+          - not_null
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null
+
+  - name: stg_sales__currency
+    description: Staged Currency source data — typed, hashed, and SCD2-ready.
+    columns:
+      - name: currency_hk
+        description: Hash key derived from currency_code.
+        data_tests:
+          - not_null
+          - unique
+      - name: currency_hashdiff
+        data_tests:
+          - not_null
+      - name: currency_code
+        data_tests:
+          - not_null
+          - unique
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null
+
+  - name: stg_sales__sales_territory
+    description: Staged SalesTerritory source data — typed, hashed, and SCD2-ready.
+    columns:
+      - name: sales_territory_hk
+        description: Hash key derived from territory_id.
+        data_tests:
+          - not_null
+          - unique
+      - name: sales_territory_hashdiff
+        data_tests:
+          - not_null
+      - name: territory_id
+        data_tests:
+          - not_null
+          - unique
+      - name: territory_name
+        data_tests:
+          - not_null
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null
+
+  - name: stg_sales__special_offer
+    description: Staged SpecialOffer source data — typed, hashed, and SCD2-ready. Maps to DimPromotion in DW.
+    columns:
+      - name: special_offer_hk
+        description: Hash key derived from special_offer_id.
+        data_tests:
+          - not_null
+          - unique
+      - name: special_offer_hashdiff
+        data_tests:
+          - not_null
+      - name: special_offer_id
+        data_tests:
+          - not_null
+          - unique
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null
+
+  - name: stg_sales__special_offer_product
+    description: Staged SpecialOfferProduct bridge table — typed, hashed, and SCD2-ready.
+    columns:
+      - name: special_offer_product_hk
+        description: Hash key derived from composite key (special_offer_id, product_id).
+        data_tests:
+          - not_null
+          - unique
+      - name: special_offer_product_hashdiff
+        data_tests:
+          - not_null
+      - name: special_offer_id
+        data_tests:
+          - not_null
+      - name: product_id
+        data_tests:
+          - not_null
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null
+
+  - name: stg_sales__sales_reason
+    description: Staged SalesReason lookup data — typed, hashed, and SCD2-ready.
+    columns:
+      - name: sales_reason_hk
+        description: Hash key derived from sales_reason_id.
+        data_tests:
+          - not_null
+          - unique
+      - name: sales_reason_hashdiff
+        data_tests:
+          - not_null
+      - name: sales_reason_id
+        data_tests:
+          - not_null
+          - unique
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null
+
+  - name: stg_sales__sales_order_header_sales_reason
+    description: Staged SalesOrderHeaderSalesReason bridge — typed, hashed, and SCD2-ready.
+    columns:
+      - name: sales_order_sales_reason_hk
+        description: Hash key derived from composite key (sales_order_id, sales_reason_id).
+        data_tests:
+          - not_null
+          - unique
+      - name: sales_order_sales_reason_hashdiff
+        data_tests:
+          - not_null
+      - name: sales_order_id
+        data_tests:
+          - not_null
+      - name: sales_reason_id
+        data_tests:
+          - not_null
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null

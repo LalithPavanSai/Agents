@@ -1,0 +1,216 @@
+version: 2
+
+models:
+  - name: stg_person__person
+    description: Staged Person source data — typed, hashed, and SCD2-ready. Maps to DimCustomer in DW.
+    columns:
+      - name: person_hk
+        description: Hash key derived from business_entity_id.
+        data_tests:
+          - not_null
+          - unique
+      - name: person_hashdiff
+        data_tests:
+          - not_null
+      - name: business_entity_id
+        data_tests:
+          - not_null
+          - unique
+      - name: first_name
+        data_tests:
+          - not_null
+      - name: last_name
+        data_tests:
+          - not_null
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null
+
+  - name: stg_person__email_address
+    description: Staged EmailAddress data — typed, hashed, and SCD2-ready.
+    columns:
+      - name: email_address_hk
+        description: Hash key derived from composite key (business_entity_id, email_address_id).
+        data_tests:
+          - not_null
+          - unique
+      - name: email_address_hashdiff
+        data_tests:
+          - not_null
+      - name: business_entity_id
+        data_tests:
+          - not_null
+      - name: email_address_id
+        data_tests:
+          - not_null
+      - name: email_address
+        data_tests:
+          - not_null
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null
+
+  - name: stg_person__person_phone
+    description: Staged PersonPhone data — typed, hashed, and SCD2-ready.
+    columns:
+      - name: person_phone_hk
+        description: Hash key derived from composite key (business_entity_id, phone_number, phone_number_type_id).
+        data_tests:
+          - not_null
+          - unique
+      - name: person_phone_hashdiff
+        data_tests:
+          - not_null
+      - name: business_entity_id
+        data_tests:
+          - not_null
+      - name: phone_number
+        data_tests:
+          - not_null
+      - name: phone_number_type_id
+        data_tests:
+          - not_null
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null
+
+  - name: stg_person__address
+    description: Staged Address data — typed, hashed, and SCD2-ready. Maps to DimGeography in DW.
+    columns:
+      - name: address_hk
+        description: Hash key derived from address_id.
+        data_tests:
+          - not_null
+          - unique
+      - name: address_hashdiff
+        data_tests:
+          - not_null
+      - name: address_id
+        data_tests:
+          - not_null
+          - unique
+      - name: city
+        data_tests:
+          - not_null
+      - name: state_province_id
+        data_tests:
+          - not_null
+      - name: postal_code
+        data_tests:
+          - not_null
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null
+
+  - name: stg_person__state_province
+    description: Staged StateProvince lookup data — typed, hashed, and SCD2-ready.
+    columns:
+      - name: state_province_hk
+        description: Hash key derived from state_province_id.
+        data_tests:
+          - not_null
+          - unique
+      - name: state_province_hashdiff
+        data_tests:
+          - not_null
+      - name: state_province_id
+        data_tests:
+          - not_null
+          - unique
+      - name: state_province_code
+        data_tests:
+          - not_null
+      - name: country_region_code
+        data_tests:
+          - not_null
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null
+
+  - name: stg_person__country_region
+    description: Staged CountryRegion lookup data — typed, hashed, and SCD2-ready.
+    columns:
+      - name: country_region_hk
+        description: Hash key derived from country_region_code.
+        data_tests:
+          - not_null
+          - unique
+      - name: country_region_hashdiff
+        data_tests:
+          - not_null
+      - name: country_region_code
+        data_tests:
+          - not_null
+          - unique
+      - name: country_region_name
+        data_tests:
+          - not_null
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null
+
+  - name: stg_person__business_entity_address
+    description: Staged BusinessEntityAddress bridge table — typed, hashed, and SCD2-ready.
+    columns:
+      - name: business_entity_address_hk
+        description: Hash key derived from composite key (business_entity_id, address_id, address_type_id).
+        data_tests:
+          - not_null
+          - unique
+      - name: business_entity_address_hashdiff
+        data_tests:
+          - not_null
+      - name: business_entity_id
+        data_tests:
+          - not_null
+      - name: address_id
+        data_tests:
+          - not_null
+      - name: address_type_id
+        data_tests:
+          - not_null
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null

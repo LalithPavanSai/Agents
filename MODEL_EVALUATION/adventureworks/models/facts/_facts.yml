@@ -1,0 +1,180 @@
+version: 2
+
+models:
+  - name: fact_internet_sales
+    description: >
+      FactInternetSales — AdventureWorksDW Internet Sales fact table.
+      Grain: one row per sales order line item (SalesOrderNumber + SalesOrderLineNumber).
+      Sources: stg_sales__sales_order_detail (line level) joined to
+      stg_sales__sales_order_header (header level) + stg_production__product_cost_history
+      (standard cost at order date) + all relevant dimension tables for surrogate keys.
+      Materialized as incremental (delete+insert) — new order lines are appended;
+      no SCD2 since facts are immutable transaction records.
+    columns:
+      - name: product_key
+        description: >
+          FK to dim_product.product_key (integer surrogate). Resolved via product_number
+          lookup. Defaults to 0 if product not found in dimension.
+        data_tests:
+          - not_null
+      - name: order_date_key
+        description: FK to dim_date.date_key — order date in YYYYMMDD integer format.
+        data_tests:
+          - not_null
+      - name: due_date_key
+        description: FK to dim_date.date_key — due date in YYYYMMDD integer format.
+        data_tests:
+          - not_null
+      - name: ship_date_key
+        description: FK to dim_date.date_key — ship date in YYYYMMDD integer format (0 if not yet shipped).
+      - name: customer_key
+        description: >
+          FK to dim_customer.customer_key (integer surrogate). Resolved via
+          customer.account_number lookup. Defaults to 0 if not found.
+        data_tests:
+          - not_null
+      - name: promotion_key
+        description: >
+          FK to dim_promotion.promotion_key (integer surrogate). Resolved via
+          special_offer_id lookup. Defaults to 0 (no promotion).
+        data_tests:
+          - not_null
+      - name: currency_key
+        description: >
+          FK to dim_currency.currency_key. Domestic orders (currency_rate_id IS NULL)
+          map to USD key. Foreign-currency orders default to 0 — CurrencyRate source
+          table is not loaded in this pipeline, preventing full resolution.
+        data_tests:
+          - not_null
+      - name: sales_territory_key
+        description: FK to dim_sales_territory.sales_territory_key. Defaults to 0 if not found.
+        data_tests:
+          - not_null
+      - name: sales_order_number
+        description: >
+          Degenerate dimension — natural order business key (e.g. SO43659).
+          Not a FK to any dimension; stored directly in the fact per DW convention.
+        data_tests:
+          - not_null
+      - name: sales_order_line_number
+        description: >
+          Degenerate dimension — line number within the order (= SalesOrderDetailID).
+          Composite PK with sales_order_number.
+        data_tests:
+          - not_null
+      - name: revision_number
+        description: Order revision number from SalesOrderHeader.
+      - name: customer_po_number
+        description: Customer purchase order number (nullable).
+      - name: carrier_tracking_number
+        description: Shipment tracking number from carrier (nullable).
+      - name: order_date
+        description: Full order date timestamp (denormalised from header for convenience).
+      - name: due_date
+        description: Full due date timestamp.
+      - name: ship_date
+        description: Full ship date timestamp (nullable — null if not yet shipped).
+      - name: order_quantity
+        description: Number of units ordered on this line.
+        data_tests:
+          - not_null
+      - name: unit_price
+        description: Selling price per unit (before discount).
+        data_tests:
+          - not_null
+      - name: extended_amount
+        description: Gross line value before discount = unit_price × order_quantity.
+        data_tests:
+          - not_null
+      - name: unit_price_discount_pct
+        description: Discount fraction applied to unit price (e.g. 0.02 = 2% discount).
+        data_tests:
+          - not_null
+      - name: discount_amount
+        description: Total discount applied to line = unit_price_discount_pct × unit_price × order_quantity.
+        data_tests:
+          - not_null
+      - name: product_standard_cost
+        description: >
+          Standard manufacturing cost per unit at the time of order.
+          Derived from stg_production__product_cost_history via range join
+          (start_date <= order_date < end_date). Defaults to 0 if no cost record found.
+        data_tests:
+          - not_null
+      - name: total_product_cost
+        description: Total cost of goods for this line = product_standard_cost × order_quantity.
+        data_tests:
+          - not_null
+      - name: sales_amount
+        description: >
+          Net revenue for this line = unit_price × order_quantity × (1 - discount_pct).
+          Equals line_total from SalesOrderDetail.
+        data_tests:
+          - not_null
+      - name: tax_amt
+        description: >
+          Tax amount pro-rated to line level.
+          Formula: header.tax_amount × (line.sales_amount / header.subtotal).
+        data_tests:
+          - not_null
+      - name: freight
+        description: >
+          Freight amount pro-rated to line level.
+          Formula: header.freight_amount × (line.sales_amount / header.subtotal).
+        data_tests:
+          - not_null
+      - name: modified_date_watermark
+        description: >
+          Greatest of soh.modified_date and sod.modified_date — used as an audit
+          watermark to track the most recent source change that contributed to this row.
+      - name: record_source
+        description: Source system lineage tag (e.g. csv:Sales.SalesOrderDetail).
+        data_tests:
+          - not_null
+      - name: load_dts
+        description: Timestamp when the raw record was loaded by dbt (audit column).
+        data_tests:
+          - not_null
+
+  - name: fact_internet_sales_reason
+    description: >
+      FactInternetSalesReason — AdventureWorksDW factless fact / bridge table.
+      Grain: one row per (SalesOrderNumber, SalesOrderLineNumber, SalesReasonKey).
+      Records which sales reason(s) drove each order line.
+
+      OLTP → DW level expansion: SalesOrderHeaderSalesReason stores reasons at
+      ORDER level, but the DW requires LINE level. This model expands each
+      (order, reason) pair to all line numbers belonging to that order by joining
+      to SalesOrderDetail — producing one row per (line × reason) combination.
+
+      Example: Order SO43659 has 3 lines and 2 reasons → 6 rows in this table.
+
+      No measures — this is a purely associative bridge table used to analyse
+      sales by reason alongside FactInternetSales.
+    columns:
+      - name: sales_order_number
+        description: >
+          FK to fact_internet_sales.sales_order_number and FactInternetSales.
+          Part of composite PK (3-column).
+        data_tests:
+          - not_null
+      - name: sales_order_line_number
+        description: >
+          FK to fact_internet_sales.sales_order_line_number.
+          Part of composite PK. Expanded from header-level OLTP source to line level.
+        data_tests:
+          - not_null
+      - name: sales_reason_key
+        description: >
+          FK to dim_sales_reason.sales_reason_key (integer surrogate).
+          Part of composite PK. Defaults to 0 if reason not found in dimension.
+        data_tests:
+          - not_null
+      - name: record_source
+        description: Source system lineage tag.
+        data_tests:
+          - not_null
+      - name: load_dts
+        description: Timestamp when the raw record was loaded by dbt (audit column).
+        data_tests:
+          - not_null

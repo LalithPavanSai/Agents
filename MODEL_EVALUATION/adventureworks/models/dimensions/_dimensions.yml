@@ -1,0 +1,289 @@
+version: 2
+
+models:
+  - name: dim_date
+    description: >
+      Calendar dimension generated from SQL date range (2001-01-01 to 2014-12-31).
+      Static table, no SCD2. Provides date attributes for all date foreign keys in
+      FactInternetSales (OrderDateKey, DueDateKey, ShipDateKey).
+    columns:
+      - name: date_key
+        description: Integer surrogate key in YYYYMMDD format. Primary key.
+        data_tests:
+          - not_null
+          - unique
+      - name: full_date_alternate_key
+        description: The calendar date value.
+        data_tests:
+          - not_null
+          - unique
+      - name: calendar_year
+        data_tests:
+          - not_null
+      - name: month_number_of_year
+        data_tests:
+          - not_null
+      - name: calendar_quarter
+        data_tests:
+          - not_null
+
+  - name: dim_currency
+    description: >
+      SCD Type 2 dimension for currencies. Sources from stg_sales__currency.
+      Tracks changes in currency name over time via hashdiff comparison.
+    columns:
+      - name: currency_key
+        description: Integer surrogate key generated via ROW_NUMBER().
+        data_tests:
+          - not_null
+          - unique
+      - name: currency_alternate_key
+        description: Natural business key — ISO currency code (e.g. USD, EUR).
+        data_tests:
+          - not_null
+      - name: currency_name
+        data_tests:
+          - not_null
+      - name: effective_start_date
+        description: SCD2 — date this version became active (from source modifieddate).
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        description: SCD2 — date this version expired. 9999-12-31 for current records.
+        data_tests:
+          - not_null
+      - name: is_current
+        description: SCD2 — true for the current active version of this entity.
+        data_tests:
+          - not_null
+
+  - name: dim_sales_reason
+    description: >
+      SCD Type 2 dimension for sales reasons. Sources from stg_sales__sales_reason.
+      Referenced by FactInternetSalesReason.
+    columns:
+      - name: sales_reason_key
+        description: Integer surrogate key generated via ROW_NUMBER().
+        data_tests:
+          - not_null
+          - unique
+      - name: sales_reason_alternate_key
+        description: Natural business key — salesreasonid from source.
+        data_tests:
+          - not_null
+      - name: reason_name
+        data_tests:
+          - not_null
+      - name: reason_type
+        data_tests:
+          - not_null
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null
+
+  - name: dim_promotion
+    description: >
+      SCD Type 2 dimension for promotions/special offers. Sources from
+      stg_sales__special_offer. Maps to FactInternetSales.PromotionKey.
+    columns:
+      - name: promotion_key
+        description: Integer surrogate key generated via ROW_NUMBER().
+        data_tests:
+          - not_null
+          - unique
+      - name: promotion_alternate_key
+        description: Natural business key — specialofferid from source.
+        data_tests:
+          - not_null
+      - name: english_promotion_name
+        description: Promotion description/name.
+        data_tests:
+          - not_null
+      - name: discount_pct
+        description: Discount percentage applied by this promotion.
+      - name: english_promotion_type
+        description: Type classification of the promotion.
+      - name: english_promotion_category
+        description: Category classification of the promotion.
+      - name: start_date
+        data_tests:
+          - not_null
+      - name: end_date
+        description: End date of the promotion offer (nullable for open-ended promotions).
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null
+
+  - name: dim_sales_territory
+    description: >
+      SCD Type 2 dimension for sales territories. Sources from
+      stg_sales__sales_territory joined to stg_person__country_region for country name.
+      Maps to FactInternetSales.SalesTerritoryKey.
+    columns:
+      - name: sales_territory_key
+        description: Integer surrogate key generated via ROW_NUMBER().
+        data_tests:
+          - not_null
+          - unique
+      - name: sales_territory_alternate_key
+        description: Natural business key — territoryid from source.
+        data_tests:
+          - not_null
+      - name: sales_territory_region
+        description: Territory name (e.g. Northwest, Southwest).
+        data_tests:
+          - not_null
+      - name: sales_territory_country
+        description: Country name resolved from country_region_code.
+      - name: sales_territory_group
+        description: Regional grouping (e.g. North America, Europe, Pacific).
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null
+
+  - name: dim_geography
+    description: >
+      SCD Type 2 geography dimension. Derived from stg_person__address joined to
+      state_province and country_region staging models. Each row represents one unique
+      physical address. Referenced by dim_customer via geography_key.
+    columns:
+      - name: geography_key
+        description: Integer surrogate key generated via ROW_NUMBER().
+        data_tests:
+          - not_null
+          - unique
+      - name: geography_alternate_key
+        description: Natural business key — address_id from source.
+        data_tests:
+          - not_null
+      - name: city
+        data_tests:
+          - not_null
+      - name: state_province_code
+        description: ISO state/province abbreviation code.
+      - name: state_province_name
+        description: Full state or province name.
+      - name: country_region_code
+        description: ISO 2-letter country code.
+      - name: english_country_region_name
+        description: Full country name in English.
+      - name: postal_code
+        description: ZIP or postal code.
+      - name: sales_territory_id
+        description: FK reference to sales territory (not yet resolved to surrogate key at geo level).
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null
+
+  - name: dim_product
+    description: >
+      SCD Type 2 product dimension. Sources from stg_production__product joined to
+      product_subcategory, product_category, and product_model. Includes derived status
+      column (Current/Expired) and enriched category/model attributes.
+      Maps to FactInternetSales.ProductKey.
+    columns:
+      - name: product_key
+        description: Integer surrogate key generated via ROW_NUMBER().
+        data_tests:
+          - not_null
+          - unique
+      - name: product_alternate_key
+        description: Natural business key — product_number from source.
+        data_tests:
+          - not_null
+      - name: english_product_name
+        data_tests:
+          - not_null
+      - name: standard_cost
+        description: Standard manufacturing cost.
+      - name: finished_goods_flag
+        description: True if this is a sellable finished product.
+      - name: list_price
+        description: Selling list price.
+      - name: product_subcategory_name
+        description: Denormalised subcategory name from ProductSubcategory.
+      - name: product_category_name
+        description: Denormalised category name from ProductCategory.
+      - name: model_name
+        description: Denormalised model name from ProductModel.
+      - name: status
+        description: Derived status — Current if sell_end_date is null or future, Expired otherwise.
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null
+
+  - name: dim_customer
+    description: >
+      SCD Type 2 customer dimension. Denormalised from stg_sales__customer joined to
+      Person, EmailAddress, BusinessEntityAddress, Address, StateProvince, CountryRegion,
+      and dim_geography. Combined hashdiff captures changes from any upstream source table.
+      Maps to FactInternetSales.CustomerKey.
+    columns:
+      - name: customer_key
+        description: Integer surrogate key generated via ROW_NUMBER().
+        data_tests:
+          - not_null
+          - unique
+      - name: customer_alternate_key
+        description: Natural business key — account_number from Customer.
+        data_tests:
+          - not_null
+      - name: geography_key
+        description: FK to dim_geography.geography_key resolved at load time.
+      - name: first_name
+        description: NULL for store/business customers who have no person record (person_id IS NULL in source).
+      - name: last_name
+        description: NULL for store/business customers who have no person record (person_id IS NULL in source).
+      - name: email_address
+        description: Primary email address for this customer.
+      - name: city
+        description: Denormalised city from Address.
+      - name: state_province_code
+        description: Denormalised state/province code from StateProvince.
+      - name: english_country_region_name
+        description: Denormalised country name from CountryRegion.
+      - name: postal_code
+        description: Denormalised postal code from Address.
+      - name: customer_hashdiff
+        description: Combined hashdiff across all denormalised attributes for change detection.
+        data_tests:
+          - not_null
+      - name: effective_start_date
+        data_tests:
+          - not_null
+      - name: effective_end_date
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null
